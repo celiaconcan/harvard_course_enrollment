@@ -1,0 +1,90 @@
+---
+title: "Economics Department Enrollment"
+author: "Celia Concannon"
+date: "4/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(janitor)
+library(dplyr)
+library(ggthemes)
+
+# Necessary libraries to run the code.
+```
+
+
+```{r upload data, echo=FALSE, message=FALSE, warning=FALSE}
+spring_19 <- read_excel("class_enrollment_summary_by_term_3.22.19.xlsx", skip = 3) %>%
+  clean_names() %>%
+  filter(! is.na(course_section_code)) %>%
+  filter(u_grad > 5) %>%
+  filter(course_department == "Economics") %>%
+  filter(!course_name == "Tutorial - Sophomore Year")
+
+# Read in the excel file. skip = 3 fixes the data set so that the column names are at the top.
+
+# clean_names() puts column names in a uniform style.
+
+# Filtered out the NAs
+
+# Filtered so that I am only looking at Economics course data, and I only want to look at larger size courses, not sophomore tutorials.
+
+spring_18 <- class_enrollment_summary_by_term_03_06_18 <- read_excel("class_enrollment_summary_by_term_03.06.18.xlsx", skip = 3) %>%
+  clean_names() %>%
+  filter(! is.na(course_section_code)) %>%
+  filter(u_grad > 5) %>%
+  filter(course_department == "Economics") %>%
+  filter(!course_name == "Tutorial - Sophomore Year")
+
+# Repeated same process as above but for spring 2018 data.
+```
+
+```{r, echo=FALSE}
+x <- inner_join(spring_19, spring_18, by= "course_id", suffix = c(".2019", ".2018")) %>%
+  mutate(difference = u_grad.2019 - u_grad.2018) %>% 
+  select(course_title.2019, course_name.2019, u_grad.2018, u_grad.2019, difference) %>% 
+  arrange(difference) %>% 
+  slice(1:5, 18:22) 
+
+# Joined the two years of data into one set.  Added the suffix ".2019" like we did in class, so that I could distinguish between enrollment numbers in the different years.
+
+# Selected for the only things I care about analyzing, the course info and the enrollment in both years.
+
+# I arranged this data from largest negative difference to largest positive.
+
+# Using slice I selected the 5 largest negative differences, and the 5 largest positive differences.
+
+x %>%
+  ggplot(aes(x = reorder(course_name.2019, difference), y = difference, fill = difference)) +
+  
+# Reorder arranges the course names on the side of the graph by highest difference to lowest.
+  
+  geom_col(show.legend = FALSE) +
+  
+# Creates a graph with no legend.
+  
+  scale_fill_gradient2(midpoint = 0, mid = "gray", high = "green", low = "red") +
+  
+# Allows me to pick the colors I want for the graph.  I thought it made sense to have the positive changes be green and the negative changes to be shown in red.  I picked the mid value as gray because if it is white it is too hard to see with the economist theme.
+  
+  coord_flip() +
+
+# Flips the chart putting course names on the y axis and making a side bar graph.
+  
+  theme_economist_white() +
+  
+# I tried a bunch of themes but liked this one the best in the end.
+  
+  labs(title = "Economics Course Enrollments",
+       subtitle = "Largest positive and negative changes
+       from Spring '18 to Spring '19",
+        y = "Difference in Enrollment",
+        x = "Course")
+
+# Allows me to label everything
+```
